@@ -1,14 +1,33 @@
-public class stock{
-    private String symbol;
-    private double price;
+import java.util.*;
+import java.io.*;
 
-    stock(String symbol, double price){
-        this.symbol = symbol;
-        this.price = price;
+public class Stock implements Runnable{
+    String name="";
+    Double currentPrice;
+    Double previousPrice;
+    int quantity;
+    public Stock(String name,Double currentPrice,Double previousPrice,int quantity){
+        this.name=name;
+        this.currentPrice=currentPrice;
+        this.previousPrice=previousPrice;
+        this.quantity=quantity;
     }
-
-    public String getSymbol(){ return this.symbol; }
-    public double getPrice(){ return this.price; }
-    
-    public void setPrice(double newPrice){ this.price = newPrice;}
+    public void run(){
+        System.out.println("Stock Thread running");
+    }
+    public void updatePrice(Double currentPrice){
+        this.currentPrice=currentPrice;
+    }
+    public Double getPrevPrice(){
+        return previousPrice;
+    }
+    public void addQuantity(int quantity){
+        this.quantity+=quantity;
+    }
+    public void removeQuantity(int quantity){
+        this.quantity-=quantity;
+    }
+    public int getQuantity(){
+        return quantity;
+    }
 }
