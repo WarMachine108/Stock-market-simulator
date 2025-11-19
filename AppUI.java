@@ -243,6 +243,7 @@ public class AppUI extends Application {
         graphing.display(s.symbol);
     }
     private void openBuyDialog(Label totalLabel) {
+
         TextInputDialog nameDialog = new TextInputDialog();
         nameDialog.setHeaderText("Enter Stock Name");
         nameDialog.setContentText("Stock name:");
@@ -277,17 +278,23 @@ public class AppUI extends Application {
 
         int qty = Integer.parseInt(qtyResult.get());
 
-        Stock newStock = new Stock(stockName, symbol, price, price, qty);
-        stockList.add(newStock);
+        boolean ok = user.buy(symbol, qty);
+
+        if (!ok) {
+            showAlert("Could not buy stock.");
+            return;
+        }
+        stockList.setAll(user.stockHoldings.values());
         table.refresh();
-        user.stockHoldings.put(symbol, newStock);
-        user.saveData();
+
         updateTotalLabel(totalLabel);
-        balanceValue.setText("Balance: ₹" + String.format("%.2f", user.balance));
+        balanceValue.setText("Balance: ₹" + user.balance);
+
         showAlert("Bought " + qty + " shares of " + stockName);
     }
 
-    private void openSellDialog(Label totalLabel) {
+
+   private void openSellDialog(Label totalLabel) {
         Stock selected = table.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showAlert("Select a stock first!");
@@ -300,17 +307,22 @@ public class AppUI extends Application {
 
         dialog.showAndWait().ifPresent(q -> {
             int qty = Integer.parseInt(q);
-            if (qty > selected.getQuantity()) {
-                showAlert("Not enough shares!");
+
+            boolean ok = user.sell(selected.symbol, qty);
+
+            if (!ok) {
+                showAlert("Sell failed.");
                 return;
             }
 
-            user.sell(selected.symbol, qty);
+            stockList.setAll(user.stockHoldings.values());
             table.refresh();
+
             updateTotalLabel(totalLabel);
-             balanceValue.setText("Balance: ₹" + String.format("%.2f", user.balance));
+            balanceValue.setText("Balance: ₹" + user.balance);
         });
     }
+
 
     private void refreshPrices(Label totalLabel) {
         stockList.forEach(Stock::updatePrice);
