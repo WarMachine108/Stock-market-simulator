@@ -7,16 +7,15 @@ import java.net.http.HttpResponse;
 //FILE HANDLING
 import java.io.FileWriter;
 import java.io.File;
-
-//INPUT AND SHI
-import java.util.Scanner;
-
 //FOR URL MODIFICATION 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 //JSON THING
 import com.google.gson.*;
+
+//INPUT AND SHI
+import java.util.*;
 
 class yahoofin {
 
@@ -79,6 +78,37 @@ class yahoofin {
             e.printStackTrace();
         }
     }
+
+    public static ArrayList<String> searchStocksReturnList(String query) {
+        ArrayList<String> out = new ArrayList<>();
+
+        try {
+            String url = "https://query1.finance.yahoo.com/v1/finance/search?q=" +
+                    URLEncoder.encode(query, StandardCharsets.UTF_8);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "Mozilla/5.0")
+                    .build();
+
+            HttpResponse<String> response =
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            JsonObject obj = JsonParser.parseString(response.body()).getAsJsonObject();
+            JsonArray quotes = obj.getAsJsonArray("quotes");
+
+            for (JsonElement e : quotes) {
+                JsonObject item = e.getAsJsonObject();
+                if (item.has("symbol"))
+                    out.add(item.get("symbol").getAsString());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return out;
+    }
 }
 
 public class stockAPI {
@@ -119,7 +149,7 @@ public class stockAPI {
         Thread updater = new Thread(() -> {
             while (true) {
                 try {
-                    String json = yahoofin.getRawData(symbol, "1d", "max");
+                    String json = yahoofin.getRawData(symbol, "60m", "1mo");
                     String pretty = prettyJson(json);
 
                     saveToFile(pretty);
@@ -138,16 +168,30 @@ public class stockAPI {
 
     public static double getPrice(String symbol) {
         try {
-            saveToFile(symbol);
             String url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol;
 
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
+                    .header("User-Agent", "Mozilla/5.0")
                     .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
+
+            String raw = response.body();
+
+            int start = raw.indexOf('{');
+            if (start != -1) {
+                raw = raw.substring(start);
+            }
+            int end = raw.lastIndexOf('}');
+            if (end != -1) {
+                raw = raw.substring(0, end + 1);
+            }
+            raw = raw.replace(")]}'", "").trim();
+
+            JsonObject json = JsonParser.parseString(raw).getAsJsonObject();
+
             JsonObject meta = json
                     .getAsJsonObject("chart")
                     .getAsJsonArray("result")
@@ -157,7 +201,7 @@ public class stockAPI {
             return meta.get("regularMarketPrice").getAsDouble();
 
         } catch (Exception e) {
-            System.out.println("Gson Error fetching price for " + symbol + ": " + e.getMessage());
+            System.out.println("Gson Error fetching price for " + symbol + ": " + e);
             return -1;
         }
     }

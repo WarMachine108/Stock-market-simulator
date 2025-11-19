@@ -3,6 +3,8 @@ import java.util.Map.Entry;
 import java.io.*;
 
 public class User {
+    public static User current; 
+
     String name="";
     Double balance=0.0;
     HashMap<String, Stock> stockHoldings; 
@@ -11,6 +13,8 @@ public class User {
         this.name=name;
         this.balance = 500000.0;
         this.stockHoldings = new HashMap<>();
+        User.current = this; 
+
     }
 
     public boolean buy(String symbol, int qty){ 
@@ -21,7 +25,7 @@ public class User {
         Stock s = stockHoldings.get(symbol);
         if (s == null){ 
             double price = stockAPI.getPrice(symbol);
-            s = new Stock(symbol, price, price, qty);
+            s = new Stock(symbol,symbol, price, price, qty);
         }
         else{ 
             s.updatePrice();
@@ -50,7 +54,7 @@ public class User {
             return false; 
         }
         s.updatePrice(); 
-        double p = s.getPrevPrice(); 
+        double p = s.getCurPrice(); 
         double totalcost = p*qty; 
         balance += totalcost; 
         s.removeQuantity(qty);
@@ -81,31 +85,55 @@ public class User {
             e.printStackTrace();
         }
     }
-    void loadData(){
-        try (BufferedReader br = new BufferedReader(new FileReader("Userinfo.txt"))) {
-            name = br.readLine();
+    void loadData() {
+        File f = new File("Userinfo.txt");
+        if (!f.exists()) {
+            System.out.println("No save file found. Creating new.");
+            saveData();
+            return;
+        }
+
+        try (BufferedReader br = new BufferedReader(new FileReader(f))) {
+
+            String n = br.readLine();
+            if (n == null || n.trim().isEmpty()) {
+                System.out.println("Name missing in save file, using default.");
+                name = "User";
+            } else {
+                name = n.trim();
+            }
+
             String balLine = br.readLine();
-            balance = Double.parseDouble(balLine);
+            if (balLine == null || balLine.trim().isEmpty()) {
+                System.out.println("Balance missing, resetting to 0.");
+                balance = 0.0;
+            } else {
+                balance = Double.parseDouble(balLine.trim());
+            }
+
             stockHoldings.clear();
 
             String line;
             while ((line = br.readLine()) != null) {
+                if (line.trim().isEmpty()) continue;
+
                 String[] arr = line.split(" ");
+                if (arr.length < 3) continue;
 
                 String symbol = arr[0];
                 double buyPrice = Double.parseDouble(arr[1]);
                 int qty = Integer.parseInt(arr[2]);
-                double currPrice = stockAPI.getPrice(symbol);
-                Stock s = new Stock(symbol, currPrice, buyPrice, qty);
 
+                double currPrice = stockAPI.getPrice(symbol);
+                Stock s = new Stock(symbol, symbol, currPrice, buyPrice, qty);
                 stockHoldings.put(symbol, s);
             }
 
-        } 
-        catch (Exception e) {   
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     public static void main(String[] args){ 
         
     }

@@ -1,0 +1,12 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "JavaFX Run",
+      "request": "launch",
+      "mainClass": "FXTest",
+      "vmArgs": "--module-path ${workspaceFolder}/FXlib/lib --add-modules javafx.controls,javafx.fxml,javafx.graphics --enable-native-access=javafx.graphics -Dprism.order=sw"
+    }
+  ]
+}
